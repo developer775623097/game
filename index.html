@@ -3,48 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>حرب الموارد  ⚔️</title>
+    <title>حرب الموارد - الوضع الأفقي ⚔️</title>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
     <style>
-        :root { --bg: #1a1a2e; --gold: #f1c40f; --shield: #3498db; --danger: #e74c3c; }
-        body { font-family: sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #16213e; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-bottom: 2px solid #0f3460; }
-        .stat { background: #0f3460; padding: 5px; border-radius: 5px; text-align: center; font-size: 0.8rem; }
-        .stat span { color: var(--gold); display: block; font-size: 1rem; font-weight: bold; }
-        #gameArea { flex-grow: 1; position: relative; background: #1b262c; touch-action: none; overflow: hidden; }
-        .resource { width: 40px; height: 40px; position: absolute; border-radius: 50%; background: var(--gold); box-shadow: 0 0 15px var(--gold); display: flex; align-items: center; justify-content: center; animation: pop 0.3s ease; font-size: 1.4rem; cursor: pointer; z-index: 10; }
-        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
-        #leaderboard { background: #16213e; max-height: 180px; overflow-y: auto; padding: 10px; font-size: 0.85rem; border-top: 2px solid #0f3460; }
-        .player-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #0f3460; align-items: center; }
-        .attack-btn { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 5px; font-weight: bold; }
-        .attack-btn:disabled { background: #444; color: #888; }
-        footer { padding: 12px; background: #16213e; text-align: center; }
-        .shield-btn { background: var(--shield); color: white; border: none; padding: 12px; border-radius: 25px; width: 90%; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .shield-btn:active { transform: scale(0.98); }
+        :root { --bg: #1a1a2e; --gold: #f1c40f; --shield: #3498db; --danger: #e74c3c; --panel: #16213e; }
+        
+        body { 
+            font-family: sans-serif; background: var(--bg); color: white; margin: 0; 
+            overflow: hidden; display: flex; height: 100vh; width: 100vw; 
+        }
+
+        /* القائمة الجانبية اليمنى (معلومات اللاعب) */
+        aside#sidebar {
+            width: 200px; background: var(--panel); border-left: 2px solid #0f3460;
+            display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;
+        }
+
+        /* منطقة اللعب (الوسط) */
+        main#gameArea {
+            flex-grow: 1; position: relative; background: #1b262c;
+            overflow: hidden; touch-action: none;
+            background-image: radial-gradient(#243447 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* القائمة الجانبية اليسرى (المتصدرون) */
+        aside#leaderboard {
+            width: 250px; background: var(--panel); border-right: 2px solid #0f3460;
+            display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;
+        }
+
+        .stat-card {
+            background: #0f3460; padding: 10px; border-radius: 8px; margin-bottom: 10px;
+            text-align: center; border: 1px solid #1a1a2e;
+        }
+        .stat-card span { color: var(--gold); font-size: 1.2rem; font-weight: bold; display: block; }
+
+        .resource {
+            width: 40px; height: 40px; position: absolute; border-radius: 50%;
+            background: var(--gold); box-shadow: 0 0 15px var(--gold);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; cursor: pointer; z-index: 10;
+            transition: transform 0.1s;
+        }
+        .resource:active { transform: scale(0.9); }
+
+        #playersContainer { flex-grow: 1; overflow-y: auto; }
+        .player-row {
+            background: #1b262c; margin-bottom: 5px; padding: 8px;
+            border-radius: 5px; display: flex; flex-direction: column; gap: 5px;
+        }
+        .player-info { display: flex; justify-content: space-between; font-size: 0.8rem; }
+        
+        .attack-btn {
+            background: var(--danger); color: white; border: none; padding: 5px;
+            border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%;
+        }
+        .attack-btn:disabled { background: #444; }
+
+        .shield-btn {
+            background: var(--shield); color: white; border: none; padding: 12px;
+            border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: auto;
+        }
+
+        /* رسالة تنبيه عند وضع الهاتف بشكل عمودي */
+        @media screen and (orientation: portrait) {
+            #portrait-warning { display: flex !important; }
+        }
+        #portrait-warning {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 9999; display: none;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="stat">ذهبك<span id="myScore">0</span></div>
-    <div class="stat">الهجوم القادم<span id="cooldown">جاهز</span></div>
-    <div class="stat" style="grid-column: span 2;">الدرع<span id="shieldText">غير نشط</span></div>
-</header>
-
-<div id="gameArea"></div>
-
-<div id="leaderboard">
-    <strong style="display: block; margin-bottom: 5px; color: #aaa;">أقوى 10 لاعبين متصلين الآن:</strong>
-    <div id="playersContainer"></div>
+<div id="portrait-warning">
+    <h2>🔄 يرجى تدوير الهاتف</h2>
+    <p>هذه اللعبة مصممة للوضع الأفقي فقط</p>
 </div>
 
-<footer>
-    <button class="shield-btn" onclick="buyShield()">تفعيل الدرع (100 ذهب) 🛡️</button>
-</footer>
+<aside id="sidebar">
+    <div class="stat-card">ذهبك<span id="myScore">0</span></div>
+    <div class="stat-card">الدرع<span id="shieldText">غير نشط</span></div>
+    <div class="stat-card">الهجوم<span id="cooldown">جاهز</span></div>
+    <button class="shield-btn" onclick="buyShield()">شراء درع 🛡️</button>
+</aside>
+
+<main id="gameArea"></main>
+
+<aside id="leaderboard">
+    <h4 style="margin: 0 0 10px 0; text-align: center; color: #aaa;">المتصدرون 🏆</h4>
+    <div id="playersContainer"></div>
+</aside>
 
 <script>
-    // 1. إعدادات Firebase
+    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyAbYbcjdLAEfqIPyrdHq1ZIqjqumDVjhmI",
         authDomain: "barqnet-2a561.firebaseapp.com",
@@ -52,60 +108,45 @@
         projectId: "barqnet-2a561",
         storageBucket: "barqnet-2a561.firebasestorage.app",
         messagingSenderId: "53556699186",
-        appId: "1:53556699186:web:c9e2b60d81979c18841c2b",
-        measurementId: "G-CNHL8MX90W"
+        appId: "1:53556699186:web:c9e2b60d81979c18841c2b"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. تعريف اللاعب
-    const playerName = prompt("ادخل اسمك المستعار:") || "لاعب_" + Math.floor(Math.random()*1000);
+    const playerName = prompt("ادخل اسمك:") || "لاعب_" + Math.floor(Math.random()*1000);
     const playerRef = db.ref('players/' + playerName);
     let myLocalScore = 0;
     let attackCooldown = 0;
 
-    // تهيئة اللاعب
-    playerRef.set({
-        name: playerName,
-        score: 0,
-        shieldUntil: 0
-    });
+    playerRef.set({ name: playerName, score: 0, shieldUntil: 0 });
     playerRef.onDisconnect().remove();
 
-    // 3. مزامنة بياناتي
+    // تحديث بياناتي
     playerRef.on('value', snap => {
         const data = snap.val();
         if (data) {
             myLocalScore = data.score || 0;
             document.getElementById('myScore').textContent = myLocalScore;
-            
             const now = Date.now();
-            if (data.shieldUntil && data.shieldUntil > now) {
-                const remaining = Math.ceil((data.shieldUntil - now) / 1000);
-                document.getElementById('shieldText').textContent = Math.floor(remaining/60) + ":" + (remaining%60).toString().padStart(2,'0');
-            } else {
-                document.getElementById('shieldText').textContent = "غير نشط";
-            }
+            if (data.shieldUntil > now) {
+                const rem = Math.ceil((data.shieldUntil - now) / 1000);
+                document.getElementById('shieldText').textContent = Math.floor(rem/60) + ":" + (rem%60).toString().padStart(2,'0');
+            } else { document.getElementById('shieldText').textContent = "غير نشط"; }
         }
     });
 
-    // 4. نظام الموارد (المزامنة العالمية)
+    // الموارد
     db.ref('map').on('child_added', snap => {
-        const resData = snap.val();
-        const resDiv = document.createElement('div');
-        resDiv.className = 'resource';
-        resDiv.id = snap.key;
-        resDiv.innerHTML = '💰';
-        resDiv.style.left = resData.x + "%";
-        resDiv.style.top = resData.y + "%";
-        
-        resDiv.onclick = (e) => {
-            e.stopPropagation();
+        const d = snap.val();
+        const res = document.createElement('div');
+        res.className = 'resource'; res.id = snap.key; res.innerHTML = '💰';
+        res.style.left = d.x + "%"; res.style.top = d.y + "%";
+        res.onclick = () => {
             playerRef.child('score').transaction(s => (s || 0) + 15);
             db.ref('map/' + snap.key).remove();
         };
-        document.getElementById('gameArea').appendChild(resDiv);
+        document.getElementById('gameArea').appendChild(res);
     });
 
     db.ref('map').on('child_removed', snap => {
@@ -113,102 +154,72 @@
         if (el) el.remove();
     });
 
-    // مولد موارد بسيط للاختبار (يعمل عند شخص واحد فقط لتقليل الضغط)
+    // توليد الموارد
     setInterval(() => {
         db.ref('map').once('value', snap => {
-            if (snap.numChildren() < 8) {
-                db.ref('map').push({
-                    x: Math.random() * 85 + 5,
-                    y: Math.random() * 85 + 5
-                });
+            if (snap.numChildren() < 12) {
+                db.ref('map').push({ x: Math.random()*90 + 5, y: Math.random()*90 + 5 });
             }
         });
-    }, 4000);
+    }, 3000);
 
-    // 5. نظام الهجوم
-    function attackPlayer(targetName) {
-        if (attackCooldown > 0) return alert("يجب الانتظار قبل الهجوم مجدداً!");
-        if (targetName === playerName) return;
-
-        const targetRef = db.ref('players/' + targetName);
-        targetRef.get().then(snap => {
-            const target = snap.val();
-            if (!target) return;
-
-            const now = Date.now();
-            if (target.shieldUntil && target.shieldUntil > now) return alert("هذا اللاعب محمي بالدرع!");
-
-            if (target.score > myLocalScore) {
-                // خسارة في الهجوم
-                playerRef.child('score').transaction(s => Math.max(0, (s || 0) - 30));
-                targetRef.child('score').transaction(s => (s || 0) + 30);
-                alert(`هزيمة! ${targetName} أقوى منك. خسرت 30 ذهب.`);
+    // الهجوم
+    function attackPlayer(tName) {
+        if (attackCooldown > 0) return;
+        const tRef = db.ref('players/' + tName);
+        tRef.get().then(snap => {
+            const t = snap.val();
+            if (!t || (t.shieldUntil > Date.now())) return alert("اللاعب محمي!");
+            if (t.score > myLocalScore) {
+                playerRef.child('score').transaction(s => Math.max(0, s - 30));
+                tRef.child('score').transaction(s => (s || 0) + 30);
             } else {
-                // فوز في الهجوم
-                const loot = Math.floor((target.score || 0) * 0.2);
+                const loot = Math.floor((t.score || 0) * 0.2);
                 playerRef.child('score').transaction(s => (s || 0) + loot);
-                targetRef.child('score').transaction(s => Math.max(0, (s || 0) - loot));
-                alert(`نصر! نهبت ${loot} ذهب من ${targetName}.`);
+                tRef.child('score').transaction(s => Math.max(0, s - loot));
             }
-            
-            attackCooldown = 600; // 10 دقائق
-            startCooldownTimer();
+            attackCooldown = 600; startCooldown();
         });
     }
 
-    function startCooldownTimer() {
-        const timer = setInterval(() => {
+    function startCooldown() {
+        const itv = setInterval(() => {
             if (attackCooldown > 0) {
                 attackCooldown--;
-                const m = Math.floor(attackCooldown/60);
-                const s = attackCooldown%60;
-                document.getElementById('cooldown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-            } else {
-                document.getElementById('cooldown').textContent = "جاهز";
-                clearInterval(timer);
-            }
+                document.getElementById('cooldown').textContent = Math.floor(attackCooldown/60) + ":" + (attackCooldown%60).toString().padStart(2,'0');
+            } else { document.getElementById('cooldown').textContent = "جاهز"; clearInterval(itv); }
         }, 1000);
     }
 
     function buyShield() {
         if (myLocalScore >= 100) {
-            playerRef.child('score').transaction(s => (s || 0) - 100);
+            playerRef.child('score').transaction(s => s - 100);
             playerRef.child('shieldUntil').set(Date.now() + 600000);
-            alert("تم تفعيل الدرع لـ 10 دقائق! 🛡️");
-        } else {
-            alert("تحتاج إلى 100 ذهب لتفعيل الدرع!");
         }
     }
 
-    // 6. تحديث قائمة المتصدرين (إصلاح مشكلة undefined)
+    // المتصدرون
     db.ref('players').orderByChild('score').limitToLast(10).on('value', snap => {
-        const container = document.getElementById('playersContainer');
-        container.innerHTML = '';
-        const playersList = [];
-
-        snap.forEach(child => {
-            const data = child.val();
-            // إصلاح: استخدام اسم اللاعب المخزن أو مفتاح العقدة كاحتياط
-            const nameToDisplay = data.name || child.key;
-            playersList.push({ ...data, name: nameToDisplay });
-        });
-
-        // ترتيب الأغنى في الأعلى
-        playersList.reverse().forEach(p => {
-            if (p.name === playerName) return;
-
-            const isShielded = p.shieldUntil && p.shieldUntil > Date.now();
+        const cont = document.getElementById('playersContainer');
+        cont.innerHTML = '';
+        const list = [];
+        snap.forEach(c => { list.push({key: c.key, ...c.val()}); });
+        list.reverse().forEach(p => {
+            if (p.key === playerName) return;
+            const isS = p.shieldUntil > Date.now();
             const div = document.createElement('div');
             div.className = 'player-row';
             div.innerHTML = `
-                <span>👤 ${p.name} (💰${p.score || 0}) ${isShielded ? '🛡️' : ''}</span>
-                <button class="attack-btn" ${isShielded || attackCooldown > 0 ? 'disabled' : ''} 
-                    onclick="attackPlayer('${p.name}')">هجوم</button>
+                <div class="player-info">
+                    <span>${p.name || p.key}</span>
+                    <span>💰 ${p.score || 0}</span>
+                </div>
+                <button class="attack-btn" ${isS || attackCooldown > 0 ? 'disabled' : ''} 
+                    onclick="attackPlayer('${p.key}')">${isS ? 'محمي 🛡️' : 'هجوم ⚔️'}</button>
             `;
-            container.appendChild(div);
+            cont.appendChild(div);
         });
     });
 </script>
-
 </body>
 </html>
