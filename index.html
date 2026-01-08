@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نخبة المحاربين - الوضع الأفقي</title>
+    <title>نخبة المحاربين - الإصدار النهائي</title>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
     <style>
@@ -16,85 +16,56 @@
         
         main#gameArea { flex-grow: 1; position: relative; background: #010409; overflow: hidden; touch-action: none; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; }
 
-        .stat-card { background: #0d1117; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: center; border: 1px solid #30363d; }
-        .stat-card span { color: var(--gold); font-size: 1.3rem; font-weight: bold; display: block; }
+        .stat-card { background: #0d1117; padding: 10px; border-radius: 8px; margin-bottom: 8px; text-align: center; border: 1px solid #30363d; }
+        .stat-card small { color: #8b949e; font-size: 0.7rem; display: block; }
+        .stat-card span { color: var(--gold); font-size: 1.1rem; font-weight: bold; }
 
-        /* الموارد */
-        .resource { width: 45px; height: 45px; position: absolute; border-radius: 50%; background: var(--gold); box-shadow: 0 0 20px var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; z-index: 10; transition: transform 0.1s; }
-
-        /* قائمة اللاعبين والترتيب */
+        /* قائمة اللاعبين */
+        #myIdentity { background: #1f2937; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--accent); text-align: center; }
         #playersContainer { flex-grow: 1; overflow-y: auto; }
         .player-row { background: #21262d; margin-bottom: 6px; padding: 8px; border-radius: 6px; position: relative; border-right: 4px solid transparent; }
         .top-rank { border-right-color: var(--gold); }
-        .rank-num { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-weight: bold; color: var(--gold); font-size: 1.1rem; }
-        .player-info { margin-right: 25px; display: flex; flex-direction: column; font-size: 0.85rem; }
+        .rank-num { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-weight: bold; color: var(--gold); }
+        .player-info { margin-right: 25px; display: flex; flex-direction: column; font-size: 0.8rem; }
         
         /* الأزرار */
         .btn { border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .attack-btn { background: var(--danger); color: white; padding: 6px; width: 100%; margin-top: 5px; font-size: 0.8rem; }
-        .shield-btn { background: var(--shield); color: white; padding: 15px; margin-top: auto; }
-        .info-btn { background: transparent; color: #8b949e; border: 1px solid #30363d; margin-top: 5px; font-size: 0.7rem; padding: 4px; }
+        .attack-btn { background: var(--danger); color: white; padding: 6px; width: 100%; margin-top: 5px; font-size: 0.75rem; }
+        .attack-btn:disabled { background: #2d333b; color: #484f58; cursor: not-allowed; }
+        .shield-btn { background: var(--shield); color: white; padding: 12px; margin-top: auto; }
+        .shield-btn:disabled { background: #2d333b; opacity: 0.6; }
 
-        /* نوافذ الشرح */
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
-        .modal { background: var(--panel); padding: 25px; border-radius: 12px; border: 1px solid #30363d; max-width: 400px; text-align: center; }
-        .modal h2 { color: var(--gold); margin-top: 0; }
-        .modal p { line-height: 1.6; color: #c9d1d9; }
-
-        /* تسجيل الدخول */
-        #loginOverlay { display: flex; background: var(--bg); }
-        input { background: #0d1117; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+        /* النوافذ */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: var(--panel); padding: 25px; border-radius: 12px; border: 1px solid #30363d; max-width: 350px; text-align: center; }
+        
+        /* الموارد */
+        .resource { width: 42px; height: 42px; position: absolute; border-radius: 50%; background: var(--gold); box-shadow: 0 0 15px var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; z-index: 10; }
     </style>
 </head>
 <body>
 
-<div id="loginOverlay" class="overlay">
+<div id="loginOverlay" class="overlay" style="display: flex;">
     <div class="modal">
-        <h2>⚔️ دخول المحاربين</h2>
-        <p>ادخل اسمك المسجل أو اختر اسماً جديداً لتبدأ رحلتك.</p>
-        <input type="text" id="usernameInput" placeholder="اسم المستخدم...">
+        <h2>⚔️ دخول اللعبة</h2>
+        <input type="text" id="usernameInput" placeholder="ادخل اسمك هنا..." style="width: 100%; padding: 10px; margin: 15px 0; background: #0d1117; border: 1px solid #30363d; color: white;">
         <button class="btn shield-btn" style="width: 100%;" onclick="initPlayer()">دخول / تسجيل</button>
     </div>
 </div>
 
-<div id="gameIntro" class="overlay">
-    <div class="modal">
-        <h2>🎮 كيف تلعب؟</h2>
-        <p>اجمع الذهب 💰 من الساحة لزيادة ثروتك. استخدم الذهب لشراء الدروع 🛡️ أو الهجوم على الآخرين ⚔️ لتصبح الرقم 1!</p>
-        <button class="btn shield-btn" style="width: 100%;" onclick="closeModal('gameIntro')">فهمت، لنبدأ!</button>
-    </div>
-</div>
-
-<div id="attackInfo" class="overlay">
-    <div class="modal">
-        <h2>⚔️ قوانين الهجوم</h2>
-        <p>• إذا هاجمت شخصاً <b>أغنى منك</b>: ستخسر 30 عملة.<br>• إذا هاجمت شخصاً <b>أفقر منك</b>: ستنهب 20% من ذهبه.<br>• الهجوم يضعك في فترة انتظار (10 دقائق).</p>
-        <button class="btn attack-btn" style="width: 100%;" onclick="closeModal('attackInfo')">حسناً</button>
-    </div>
-</div>
-
-<div id="shieldInfo" class="overlay">
-    <div class="modal">
-        <h2>🛡️ ميزة الدرع</h2>
-        <p>يكلف الدرع <b>100 ذهب</b> ويمنحك حصانة كاملة من الهجمات لمدة <b>10 دقائق</b>. لا يمكن لأحد سرقتك وأنت محمي!</p>
-        <button class="btn shield-btn" style="width: 100%;" onclick="closeModal('shieldInfo')">فهمت</button>
-    </div>
-</div>
-
 <aside>
-    <div class="stat-card">ذهبك<span id="myScore">0</span></div>
-    <div class="stat-card">الدرع<span id="shieldText">غير نشط</span></div>
-    <div class="stat-card">الهجوم<span id="cooldown">جاهز</span></div>
-    <button class="btn info-btn" onclick="showModal('shieldInfo')">؟ شرح الدفاع</button>
-    <button class="btn shield-btn" onclick="buyShield()">تفعيل الدرع 🛡️</button>
+    <div class="stat-card"><small>الذهب الحالي</small><span id="myScore">0</span></div>
+    <div class="stat-card"><small>وقت الدرع</small><span id="shieldText">غير نشط</span></div>
+    <div class="stat-card"><small>انتظار الهجوم</small><span id="cooldown">جاهز</span></div>
+    <button id="mainShieldBtn" class="btn shield-btn" onclick="buyShield()">تفعيل الدرع (100 💰)</button>
 </aside>
 
 <main id="gameArea"></main>
 
 <aside>
-    <h4 style="margin: 0 0 10px 0; text-align: center;">المتصدرون 🏆</h4>
+    <div id="myIdentity">👤 <b id="displayMyName">...</b> (أنت)</div>
+    <h4 style="margin: 0 0 10px 0; text-align: center; font-size: 0.9rem;">قائمة المحاربين 🏆</h4>
     <div id="playersContainer"></div>
-    <button class="btn info-btn" onclick="showModal('attackInfo')">؟ شرح الهجوم</button>
 </aside>
 
 <script>
@@ -110,45 +81,45 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let playerName, playerRef, myLocalScore = 0, attackCooldown = 0;
+    let playerName, playerRef, myLocalScore = 0, attackCooldown = 0, isShieldActive = false;
 
-    function showModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-    // دخول / تسجيل لاعب
     function initPlayer() {
         const input = document.getElementById('usernameInput').value.trim();
-        if (!input) return alert("الرجاء إدخال اسم!");
+        if (!input) return alert("الاسم مطلوب!");
         playerName = input;
+        document.getElementById('displayMyName').textContent = playerName;
         playerRef = db.ref('players/' + playerName);
 
         playerRef.get().then(snap => {
-            if (!snap.exists()) {
-                // لاعب جديد
-                playerRef.set({ name: playerName, score: 0, shieldUntil: 0 });
-            }
-            closeModal('loginOverlay');
-            showModal('gameIntro');
+            if (!snap.exists()) playerRef.set({ name: playerName, score: 0, shieldUntil: 0 });
+            document.getElementById('loginOverlay').style.display = 'none';
             startSync();
         });
-        playerRef.onDisconnect().update({ online: false }); // يمكن تطويرها لنظام أونلاين
     }
 
     function startSync() {
+        // تحديث بياناتي ومنع التكرار
         playerRef.on('value', snap => {
             const d = snap.val();
             if (d) {
                 myLocalScore = d.score || 0;
                 document.getElementById('myScore').textContent = myLocalScore;
+                
                 const now = Date.now();
                 if (d.shieldUntil > now) {
+                    isShieldActive = true;
+                    document.getElementById('mainShieldBtn').disabled = true;
                     const rem = Math.ceil((d.shieldUntil - now) / 1000);
                     document.getElementById('shieldText').textContent = Math.floor(rem/60) + ":" + (rem%60).toString().padStart(2,'0');
-                } else { document.getElementById('shieldText').textContent = "غير نشط"; }
+                } else {
+                    isShieldActive = false;
+                    document.getElementById('mainShieldBtn').disabled = false;
+                    document.getElementById('shieldText').textContent = "غير نشط";
+                }
             }
         });
 
-        // الموارد
+        // الموارد والميكانيكيات الأخرى
         db.ref('map').on('child_added', snap => {
             const d = snap.val();
             const res = document.createElement('div');
@@ -166,17 +137,15 @@
             if (el) el.remove();
         });
 
-        // قائمة المتصدرين (عرض جميع اللاعبين مع ترقيم أول 5)
+        // القائمة المتكاملة
         db.ref('players').orderByChild('score').on('value', snap => {
             const cont = document.getElementById('playersContainer');
             cont.innerHTML = '';
-            let allPlayers = [];
-            snap.forEach(c => { allPlayers.push({key: c.key, ...c.val()}); });
-            allPlayers.reverse();
-
-            allPlayers.forEach((p, index) => {
+            let list = [];
+            snap.forEach(c => { list.push({key: c.key, ...c.val()}); });
+            list.reverse().forEach((p, i) => {
                 if (p.key === playerName) return;
-                const rank = index + 1;
+                const rank = i + 1;
                 const isS = p.shieldUntil > Date.now();
                 const div = document.createElement('div');
                 div.className = `player-row ${rank <= 5 ? 'top-rank' : ''}`;
@@ -194,45 +163,55 @@
         });
     }
 
-    // الهجوم والمولد (نفس المنطق السابق)
     function attackPlayer(tName) {
+        if (attackCooldown > 0) return;
+        attackCooldown = 600; // منع النقر المتكرر فوراً
+        startCooldownTimer();
+
         const tRef = db.ref('players/' + tName);
         tRef.get().then(snap => {
             const t = snap.val();
-            if (t.shieldUntil > Date.now()) return alert("اللاعب محمي!");
+            if (t.shieldUntil > Date.now()) return alert("اللاعب فعل الدرع للتو!");
+            
             if (t.score > myLocalScore) {
                 playerRef.child('score').transaction(s => Math.max(0, s - 30));
                 tRef.child('score').transaction(s => (s || 0) + 30);
-                alert("خسرت الهجوم!");
+                alert("خسرت 30 ذهب لصالح " + tName);
             } else {
                 const loot = Math.floor(t.score * 0.2);
                 playerRef.child('score').transaction(s => (s || 0) + loot);
                 tRef.child('score').transaction(s => Math.max(0, s - loot));
-                alert("نهبت الذهب!");
+                alert("نجح الهجوم! نهبت " + loot + " ذهب.");
             }
-            attackCooldown = 600; startCooldown();
         });
     }
 
-    function startCooldown() {
+    function startCooldownTimer() {
         const itv = setInterval(() => {
             if (attackCooldown > 0) {
                 attackCooldown--;
                 document.getElementById('cooldown').textContent = Math.floor(attackCooldown/60) + ":" + (attackCooldown%60).toString().padStart(2,'0');
-            } else { document.getElementById('cooldown').textContent = "جاهز"; clearInterval(itv); }
+            } else {
+                document.getElementById('cooldown').textContent = "جاهز";
+                clearInterval(itv);
+            }
         }, 1000);
     }
 
     function buyShield() {
+        if (isShieldActive) return; // منع الشراء إذا كان نشطاً
         if (myLocalScore >= 100) {
             playerRef.child('score').transaction(s => s - 100);
             playerRef.child('shieldUntil').set(Date.now() + 600000);
-        } else { alert("تحتاج 100 ذهب!"); }
+        } else {
+            alert("ذهب غير كافٍ!");
+        }
     }
 
+    // توليد ذهب تلقائي
     setInterval(() => {
         db.ref('map').once('value', snap => {
-            if (snap.numChildren() < 10) db.ref('map').push({ x: Math.random()*90+5, y: Math.random()*85+5 });
+            if (snap.numChildren() < 12) db.ref('map').push({ x: Math.random()*90+5, y: Math.random()*85+5 });
         });
     }, 4000);
 </script>
