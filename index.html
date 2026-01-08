@@ -12,15 +12,16 @@
         header { background: #16213e; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-bottom: 2px solid #0f3460; }
         .stat { background: #0f3460; padding: 5px; border-radius: 5px; text-align: center; font-size: 0.8rem; }
         .stat span { color: var(--gold); display: block; font-size: 1rem; font-weight: bold; }
-        #gameArea { flex-grow: 1; position: relative; background: #1b262c; touch-action: none; }
-        .resource { width: 35px; height: 35px; position: absolute; border-radius: 50%; background: var(--gold); box-shadow: 0 0 15px var(--gold); display: flex; align-items: center; justify-content: center; animation: pop 0.3s ease; font-size: 1.2rem; cursor: pointer; }
+        #gameArea { flex-grow: 1; position: relative; background: #1b262c; touch-action: none; overflow: hidden; }
+        .resource { width: 40px; height: 40px; position: absolute; border-radius: 50%; background: var(--gold); box-shadow: 0 0 15px var(--gold); display: flex; align-items: center; justify-content: center; animation: pop 0.3s ease; font-size: 1.4rem; cursor: pointer; z-index: 10; }
         @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
-        #leaderboard { background: #16213e; max-height: 150px; overflow-y: auto; padding: 10px; font-size: 0.8rem; }
-        .player-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #0f3460; align-items: center; }
-        .attack-btn { background: var(--danger); color: white; border: none; padding: 4px 10px; border-radius: 4px; }
-        .attack-btn:disabled { background: #444; }
-        footer { padding: 10px; background: #16213e; text-align: center; }
-        .shield-btn { background: var(--shield); color: white; border: none; padding: 10px; border-radius: 20px; width: 90%; font-weight: bold; }
+        #leaderboard { background: #16213e; max-height: 180px; overflow-y: auto; padding: 10px; font-size: 0.85rem; border-top: 2px solid #0f3460; }
+        .player-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #0f3460; align-items: center; }
+        .attack-btn { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 5px; font-weight: bold; }
+        .attack-btn:disabled { background: #444; color: #888; }
+        footer { padding: 12px; background: #16213e; text-align: center; }
+        .shield-btn { background: var(--shield); color: white; border: none; padding: 12px; border-radius: 25px; width: 90%; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .shield-btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -34,7 +35,7 @@
 <div id="gameArea"></div>
 
 <div id="leaderboard">
-    <strong>المتصدرون (اللاعبين المتصلين)</strong>
+    <strong style="display: block; margin-bottom: 5px; color: #aaa;">أقوى 10 لاعبين متصلين الآن:</strong>
     <div id="playersContainer"></div>
 </div>
 
@@ -43,17 +44,17 @@
 </footer>
 
 <script>
-    // 1. إعدادات Firebase (استبدلها ببيانات مشروعك)
- const firebaseConfig = {
-  apiKey: "AIzaSyAbYbcjdLAEfqIPyrdHq1ZIqjqumDVjhmI",
-  authDomain: "barqnet-2a561.firebaseapp.com",
-  databaseURL: "https://barqnet-2a561-default-rtdb.firebaseio.com",
-  projectId: "barqnet-2a561",
-  storageBucket: "barqnet-2a561.firebasestorage.app",
-  messagingSenderId: "53556699186",
-  appId: "1:53556699186:web:c9e2b60d81979c18841c2b",
-  measurementId: "G-CNHL8MX90W"
-};
+    // 1. إعدادات Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyAbYbcjdLAEfqIPyrdHq1ZIqjqumDVjhmI",
+        authDomain: "barqnet-2a561.firebaseapp.com",
+        databaseURL: "https://barqnet-2a561-default-rtdb.firebaseio.com",
+        projectId: "barqnet-2a561",
+        storageBucket: "barqnet-2a561.firebasestorage.app",
+        messagingSenderId: "53556699186",
+        appId: "1:53556699186:web:c9e2b60d81979c18841c2b",
+        measurementId: "G-CNHL8MX90W"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -64,7 +65,7 @@
     let myLocalScore = 0;
     let attackCooldown = 0;
 
-    // تهيئة اللاعب في السيرفر والحذف عند الخروج
+    // تهيئة اللاعب
     playerRef.set({
         name: playerName,
         score: 0,
@@ -72,15 +73,15 @@
     });
     playerRef.onDisconnect().remove();
 
-    // 3. مزامنة البيانات (تحديث الذهب والدرع)
+    // 3. مزامنة بياناتي
     playerRef.on('value', snap => {
         const data = snap.val();
         if (data) {
-            myLocalScore = data.score;
+            myLocalScore = data.score || 0;
             document.getElementById('myScore').textContent = myLocalScore;
             
             const now = Date.now();
-            if (data.shieldUntil > now) {
+            if (data.shieldUntil && data.shieldUntil > now) {
                 const remaining = Math.ceil((data.shieldUntil - now) / 1000);
                 document.getElementById('shieldText').textContent = Math.floor(remaining/60) + ":" + (remaining%60).toString().padStart(2,'0');
             } else {
@@ -89,7 +90,7 @@
         }
     });
 
-    // 4. نظام الموارد العالمي (الكل يرى نفس الموارد)
+    // 4. نظام الموارد (المزامنة العالمية)
     db.ref('map').on('child_added', snap => {
         const resData = snap.val();
         const resDiv = document.createElement('div');
@@ -99,7 +100,8 @@
         resDiv.style.left = resData.x + "%";
         resDiv.style.top = resData.y + "%";
         
-        resDiv.onclick = () => {
+        resDiv.onclick = (e) => {
+            e.stopPropagation();
             playerRef.child('score').transaction(s => (s || 0) + 15);
             db.ref('map/' + snap.key).remove();
         };
@@ -111,43 +113,45 @@
         if (el) el.remove();
     });
 
-    // توليد موارد (فقط لاعب واحد يقوم بالتوليد عشوائياً لتقليل الضغط)
-    if (Math.random() > 0.5) {
-        setInterval(() => {
-            if (document.querySelectorAll('.resource').length < 10) {
+    // مولد موارد بسيط للاختبار (يعمل عند شخص واحد فقط لتقليل الضغط)
+    setInterval(() => {
+        db.ref('map').once('value', snap => {
+            if (snap.numChildren() < 8) {
                 db.ref('map').push({
-                    x: Math.random() * 90,
-                    y: Math.random() * 90
+                    x: Math.random() * 85 + 5,
+                    y: Math.random() * 85 + 5
                 });
             }
-        }, 3000);
-    }
+        });
+    }, 4000);
 
-    // 5. نظام الهجوم العالمي
+    // 5. نظام الهجوم
     function attackPlayer(targetName) {
-        if (attackCooldown > 0) return alert("انتظر وقت الانتظار!");
-        
+        if (attackCooldown > 0) return alert("يجب الانتظار قبل الهجوم مجدداً!");
+        if (targetName === playerName) return;
+
         const targetRef = db.ref('players/' + targetName);
         targetRef.get().then(snap => {
             const target = snap.val();
-            const now = Date.now();
+            if (!target) return;
 
-            if (target.shieldUntil > now) return alert("اللاعب محمي بدرع!");
+            const now = Date.now();
+            if (target.shieldUntil && target.shieldUntil > now) return alert("هذا اللاعب محمي بالدرع!");
 
             if (target.score > myLocalScore) {
-                // خسارة
-                playerRef.child('score').transaction(s => Math.max(0, s - 30));
+                // خسارة في الهجوم
+                playerRef.child('score').transaction(s => Math.max(0, (s || 0) - 30));
                 targetRef.child('score').transaction(s => (s || 0) + 30);
-                alert("خسرت 30 عملة! الخصم أقوى.");
+                alert(`هزيمة! ${targetName} أقوى منك. خسرت 30 ذهب.`);
             } else {
-                // فوز
-                const loot = Math.floor(target.score * 0.2);
+                // فوز في الهجوم
+                const loot = Math.floor((target.score || 0) * 0.2);
                 playerRef.child('score').transaction(s => (s || 0) + loot);
-                targetRef.child('score').transaction(s => Math.max(0, s - loot));
-                alert(`نهبت ${loot} عملة!`);
+                targetRef.child('score').transaction(s => Math.max(0, (s || 0) - loot));
+                alert(`نصر! نهبت ${loot} ذهب من ${targetName}.`);
             }
             
-            attackCooldown = 600;
+            attackCooldown = 600; // 10 دقائق
             startCooldownTimer();
         });
     }
@@ -156,7 +160,9 @@
         const timer = setInterval(() => {
             if (attackCooldown > 0) {
                 attackCooldown--;
-                document.getElementById('cooldown').textContent = Math.floor(attackCooldown/60) + ":" + (attackCooldown%60).toString().padStart(2,'0');
+                const m = Math.floor(attackCooldown/60);
+                const s = attackCooldown%60;
+                document.getElementById('cooldown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
             } else {
                 document.getElementById('cooldown').textContent = "جاهز";
                 clearInterval(timer);
@@ -166,27 +172,38 @@
 
     function buyShield() {
         if (myLocalScore >= 100) {
-            playerRef.child('score').transaction(s => s - 100);
+            playerRef.child('score').transaction(s => (s || 0) - 100);
             playerRef.child('shieldUntil').set(Date.now() + 600000);
+            alert("تم تفعيل الدرع لـ 10 دقائق! 🛡️");
         } else {
-            alert("ذهب غير كافٍ!");
+            alert("تحتاج إلى 100 ذهب لتفعيل الدرع!");
         }
     }
 
-    // 6. تحديث قائمة المتصدرين (Realtime)
+    // 6. تحديث قائمة المتصدرين (إصلاح مشكلة undefined)
     db.ref('players').orderByChild('score').limitToLast(10).on('value', snap => {
         const container = document.getElementById('playersContainer');
         container.innerHTML = '';
-        const players = [];
-        snap.forEach(child => { players.push(child.val()); });
-        players.reverse().forEach(p => {
+        const playersList = [];
+
+        snap.forEach(child => {
+            const data = child.val();
+            // إصلاح: استخدام اسم اللاعب المخزن أو مفتاح العقدة كاحتياط
+            const nameToDisplay = data.name || child.key;
+            playersList.push({ ...data, name: nameToDisplay });
+        });
+
+        // ترتيب الأغنى في الأعلى
+        playersList.reverse().forEach(p => {
             if (p.name === playerName) return;
-            const isShielded = p.shieldUntil > Date.now();
+
+            const isShielded = p.shieldUntil && p.shieldUntil > Date.now();
             const div = document.createElement('div');
             div.className = 'player-row';
             div.innerHTML = `
-                <span>${p.name} (💰${p.score}) ${isShielded ? '🛡️' : ''}</span>
-                <button class="attack-btn" ${isShielded || attackCooldown > 0 ? 'disabled' : ''} onclick="attackPlayer('${p.name}')">هجوم</button>
+                <span>👤 ${p.name} (💰${p.score || 0}) ${isShielded ? '🛡️' : ''}</span>
+                <button class="attack-btn" ${isShielded || attackCooldown > 0 ? 'disabled' : ''} 
+                    onclick="attackPlayer('${p.name}')">هجوم</button>
             `;
             container.appendChild(div);
         });
